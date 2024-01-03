@@ -39,3 +39,9 @@ cargo build --release
 ```bash
 cd target/release/i18n-linter
 ```
+
+
+# Sample Json
+
+取り急ぎココから取得。
+https://github.com/mashpie/i18n-node/tree/master/locales
