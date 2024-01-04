@@ -40,6 +40,9 @@ cargo build --release
 cd target/release/i18n-linter
 ```
 
+```bash
+cargo fmt
+```
 
 # Sample Json
 
