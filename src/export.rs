@@ -1,13 +1,13 @@
 extern crate serde_json;
 
 use serde_json::Value;
+use std::collections::HashSet;
 use std::fs::File;
 use std::io::Read;
 use std::path::{Path, PathBuf};
 
-pub fn export(file_path: &str) -> Vec<String> {
-
-    let mut path = PathBuf::from(file_path);
+pub fn export(file_path: &str) -> HashSet<String> {
+    let path = PathBuf::from(file_path);
     let file_path = Path::new(path.as_path());
 
     let mut file = File::open(&file_path).expect("Unable to open file");
@@ -20,30 +20,43 @@ pub fn export(file_path: &str) -> Vec<String> {
     };
 
     let v: Value = serde_json::from_str(&contents).expect("Unable to parse json");
-    let mut paths = Vec::new();
+    let mut paths = HashSet::new();
     traverse(&v, "".to_string(), &mut paths);
     return paths;
 }
 
-fn traverse(val: &Value, path: String, paths: &mut Vec<String>) {
+fn traverse(val: &Value, path: String, paths: &mut HashSet<String>) {
     match val {
         Value::Object(map) => {
             for (key, value) in map {
-                let new_path = if path.is_empty() { key.clone() } else { format!("{}.{}", path, key) };
+                let new_path = if path.is_empty() {
+                    key.clone()
+                } else {
+                    format!("{}.{}", path, key)
+                };
                 traverse(value, new_path, paths);
             }
         }
-        _ => paths.push(path.clone()),
+        _ => {
+            paths.insert(path.clone());
+        }
     }
 }
 
 #[cfg(test)]
-mod export {
-    use crate::diff::{export};
+mod tests {
+    use super::*;
 
     #[test]
-    fn json_path() {
-        let expected: [&str; 2] = ["Parent.Child.GrandChild.01", "Parent.Child.GrandChild.02"];
+    fn find_json_key() {
+        let expected: HashSet<String> = [
+            "Parent.Child.GrandChild.01",
+            "Parent.Child.GrandChild.02",
+            "GrandParent",
+        ]
+        .iter()
+        .map(|s| s.to_string())
+        .collect();
         let actual = export("tests/resources/export/01/en.json");
         assert_eq!(actual, expected);
     }

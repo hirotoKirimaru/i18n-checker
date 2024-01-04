@@ -3,7 +3,7 @@ extern crate serde_json;
 use serde_json::Value;
 use std::fs::File;
 use std::io::Read;
-use std::path::{Path, PathBuf};
+use std::path::{Path};
 
 pub fn diff() {
     let file_path = Path::new("tests/resources/diff/01/en.json");
