@@ -44,6 +44,10 @@ cd target/release/i18n-linter
 cargo fmt
 ```
 
+
+# 依存関係がめんどうだから、そのまま使う？
+
+
 # Sample Json
 
 取り急ぎココから取得。

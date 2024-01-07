@@ -6,8 +6,9 @@ use std::fs::File;
 use std::io::Read;
 use std::path::Path;
 
-pub fn diff() {
-    let file_path = Path::new("tests/resources/diff/01/en.json");
+pub fn diff(base_dir: &str) {
+    let file_path = Path::new(base_dir).with_file_name()
+        Path::new("tests/resources/diff/01/en.json");
     let mut file = File::open(&file_path).expect("Unable to open file");
     let mut contents = String::new();
 
