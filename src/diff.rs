@@ -205,7 +205,7 @@ mod diff_key {
                 .unwrap(),
             &I18nFileBuilder::new()
                 .name(one.name)
-                .keys(to_hash_set(&["GrandParent"]))
+                .keys(to_hash_set(&["Parent.Child.GrandChild.01"]))
                 .build()
                 .unwrap()
         );
@@ -217,7 +217,7 @@ mod diff_key {
                 .unwrap(),
             &I18nFileBuilder::new()
                 .name(two.name)
-                .keys(to_hash_set(&["Parent.Child.GrandChild.01"]))
+                .keys(to_hash_set(&["GrandParent"]))
                 .build()
                 .unwrap()
         );

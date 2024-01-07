@@ -44,6 +44,10 @@ cd target/release/i18n-linter
 cargo fmt
 ```
 
+```bash
+cargo test
+```
+
 # Sample Json
 
 取り急ぎココから取得。
