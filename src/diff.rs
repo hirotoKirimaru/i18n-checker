@@ -103,15 +103,14 @@ fn is_same(one: &I18nFile, two: &I18nFile) -> bool {
     one.keys == two.keys
 }
 
-
-
-
 const RED: &str = "\x1b[31m";
 const YELLOW: &str = "\x1b[33m";
 const RESET: &str = "\x1b[0m";
 
 fn format(args: Vec<I18nFile>) {
-    if args.is_empty() {return}
+    if args.is_empty() {
+        return;
+    }
 
     println!("{}It has Difference!{}", RED, RESET);
     for arg in args {
@@ -121,7 +120,6 @@ fn format(args: Vec<I18nFile>) {
         println!("keys: {:?}", arg.keys);
     }
 }
-
 
 #[cfg(test)]
 mod tests {
@@ -225,9 +223,7 @@ mod diff_key {
     fn to_hash_set(param: &[&'static str]) -> HashSet<String> {
         return param.iter().map(|s| s.to_string()).collect();
     }
-
 }
-
 
 #[cfg(test)]
 mod format {
