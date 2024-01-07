@@ -1,7 +1,7 @@
 extern crate serde_json;
 
-use std::collections::HashSet;
 use serde_json::Value;
+use std::collections::HashSet;
 use std::fs::File;
 use std::io::Read;
 use std::path::Path;
@@ -66,19 +66,31 @@ impl I18nFileBuilder {
 }
 
 // TODO: argsはしばらくは実装しない。暇があったら実装する。
-fn diff_key(one: I18nFile, two: I18nFile, _args: Vec<I18nFile>) -> Vec<I18nFile> {
+fn diff_key(one: &I18nFile, two: &I18nFile, _args: Vec<&I18nFile>) -> Vec<I18nFile> {
     if is_same(one, two) {
         return vec![];
     }
 
+    // 差分のセット
+    let mut rtn: Vec<I18nFile> = vec![];
 
+    let one_difference_key: Vec<_> = one.keys.difference(&two.keys).cloned().collect();
+    let one_difference = I18nFileBuilder::new()
+        .name(one.name.clone())
+        .keys(one_difference_key.iter().map(|x| x.to_string()).collect())
+        .build();
+    rtn.push(one_difference.unwrap());
 
-
-
-    return vec![];
+    let two_difference_key: Vec<_> = two.keys.difference(&one.keys).cloned().collect();
+    let two_difference = I18nFileBuilder::new()
+        .name(two.name.clone())
+        .keys(two_difference_key.iter().map(|x| x.to_string()).collect())
+        .build();
+    rtn.push(two_difference.unwrap());
+    return rtn;
 }
 
-fn is_same(one: I18nFile, two: I18nFile) -> bool {
+fn is_same(one: &I18nFile, two: &I18nFile) -> bool {
     one.keys == two.keys
 }
 
@@ -91,7 +103,6 @@ mod tests {
         diff();
     }
 }
-
 
 #[cfg(test)]
 mod diff_key {
@@ -115,14 +126,15 @@ mod diff_key {
                 "Parent.Child.GrandChild.01",
                 "Parent.Child.GrandChild.02",
                 "GrandParent",
-            ])).build();
+            ]))
+            .build();
 
         // WHEN
-        let actual = diff_key(one.unwrap(), two.unwrap(), vec![]);
+        let actual = diff_key(&one.unwrap(), &two.unwrap(), vec![]);
 
         // THEN
         let expected: Vec<I18nFile> = vec![];
-        assert_eq!(expected , actual);
+        assert_eq!(expected, actual);
     }
 
     /// WHEN
@@ -136,33 +148,53 @@ mod diff_key {
     #[test]
     fn has_difference() {
         // GIVEN
-        let one = I18nFileBuilder::new()
+        let one: I18nFile = I18nFileBuilder::new()
             .name("ja.json".to_string())
-            .keys(to_hash_set(&[
-                "Parent.Child.GrandChild.02",
-                "GrandParent",
-            ]))
-            .build();
+            .keys(to_hash_set(&["Parent.Child.GrandChild.02", "GrandParent"]))
+            .build()
+            .unwrap();
 
-        let two = I18nFileBuilder::new()
+        let two: I18nFile = I18nFileBuilder::new()
             .name("en.json".to_string())
             .keys(to_hash_set(&[
                 "Parent.Child.GrandChild.01",
-                "Parent.Child.GrandChild.02"
-            ])).build();
+                "Parent.Child.GrandChild.02",
+            ]))
+            .build()
+            .unwrap();
 
         // WHEN
-        let actual = diff_key(one.unwrap(), two.unwrap(), vec![]);
+        let actual = diff_key(&one, &two, vec![]);
 
         // THEN
-        let expected: Vec<I18nFile> = vec![];
-        assert_eq!(expected , actual);
+        assert_eq!(actual.len(), 2);
+
+        assert_eq!(
+            actual
+                .iter()
+                .find(|x| { x.name == one.name.clone() })
+                .unwrap(),
+            &I18nFileBuilder::new()
+                .name(one.name)
+                .keys(to_hash_set(&["GrandParent"]))
+                .build()
+                .unwrap()
+        );
+
+        assert_eq!(
+            actual
+                .iter()
+                .find(|x| { x.name == two.name.clone() })
+                .unwrap(),
+            &I18nFileBuilder::new()
+                .name(two.name)
+                .keys(to_hash_set(&["Parent.Child.GrandChild.01"]))
+                .build()
+                .unwrap()
+        );
     }
 
     fn to_hash_set(param: &[&'static str]) -> HashSet<String> {
-        return param
-            .iter()
-            .map(|s| s.to_string())
-            .collect();
+        return param.iter().map(|s| s.to_string()).collect();
     }
 }
