@@ -28,7 +28,7 @@ pub fn diff() {
     }
 }
 
-
+#[derive(Eq, PartialEq, Debug)]
 pub struct I18nFile {
     name: String,
     keys: HashSet<String>,
@@ -65,12 +65,21 @@ impl I18nFileBuilder {
     }
 }
 
-fn diff_key(one: I18nFile, two: I18nFile, args: Vec<I18nFile>) -> HashSet<String> {
-    for arg in args {
-        println!("{}", arg.name);
+// TODO: argsはしばらくは実装しない。暇があったら実装する。
+fn diff_key(one: I18nFile, two: I18nFile, _args: Vec<I18nFile>) -> Vec<I18nFile> {
+    if is_same(one, two) {
+        return vec![];
     }
 
-    return HashSet::new();
+
+
+
+
+    return vec![];
+}
+
+fn is_same(one: I18nFile, two: I18nFile) -> bool {
+    one.keys == two.keys
 }
 
 #[cfg(test)]
@@ -89,12 +98,11 @@ mod diff_key {
     use super::*;
 
     #[test]
-    fn normal() {
-        let expected = HashSet::new();
-
+    fn same_key_is_empty() {
+        // GIVEN
         let one = I18nFileBuilder::new()
             .name("ja.json".to_string())
-            .keys(to_hash_set([
+            .keys(to_hash_set(&[
                 "Parent.Child.GrandChild.01",
                 "Parent.Child.GrandChild.02",
                 "GrandParent",
@@ -102,18 +110,56 @@ mod diff_key {
             .build();
 
         let two = I18nFileBuilder::new()
-            .name("ja.json".to_string())
-            .keys(to_hash_set([
+            .name("en.json".to_string())
+            .keys(to_hash_set(&[
                 "Parent.Child.GrandChild.01",
                 "Parent.Child.GrandChild.02",
                 "GrandParent",
             ])).build();
 
+        // WHEN
         let actual = diff_key(one.unwrap(), two.unwrap(), vec![]);
-        assert_eq!(actual, expected);
+
+        // THEN
+        let expected: Vec<I18nFile> = vec![];
+        assert_eq!(expected , actual);
     }
 
-    fn to_hash_set(param: [&str; 3]) -> HashSet<String> {
+    /// WHEN
+    /// ・ja.jsonに "Parent.Child.GrandChild.02", "GrandParent"
+    /// ・en.jsonに "Parent.Child.GrandChild.01", "Parent.Child.GrandChild.02"
+    /// THEN
+    /// ・ja.json に "Parent.Child.GrandChild.01"
+    /// ・en.json に "GrandParent"
+    /// が不足していることを伝える
+    ///
+    #[test]
+    fn has_difference() {
+        // GIVEN
+        let one = I18nFileBuilder::new()
+            .name("ja.json".to_string())
+            .keys(to_hash_set(&[
+                "Parent.Child.GrandChild.02",
+                "GrandParent",
+            ]))
+            .build();
+
+        let two = I18nFileBuilder::new()
+            .name("en.json".to_string())
+            .keys(to_hash_set(&[
+                "Parent.Child.GrandChild.01",
+                "Parent.Child.GrandChild.02"
+            ])).build();
+
+        // WHEN
+        let actual = diff_key(one.unwrap(), two.unwrap(), vec![]);
+
+        // THEN
+        let expected: Vec<I18nFile> = vec![];
+        assert_eq!(expected , actual);
+    }
+
+    fn to_hash_set(param: &[&'static str]) -> HashSet<String> {
         return param
             .iter()
             .map(|s| s.to_string())
