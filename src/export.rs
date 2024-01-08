@@ -17,7 +17,7 @@ pub fn export<P: AsRef<Path>>(file_path: P) -> HashSet<String> {
     // Read the file contents into a string, returns `Result` over `std::io::Error`.
     match file.read_to_string(&mut contents) {
         Err(why) => panic!("couldn't read {}: {}", file_path.display(), why),
-        Ok(_) => print!("successfully read {}", file_path.display()),
+        Ok(_) => println!("successfully read {}", file_path.display()),
     };
 
     let v: Value = serde_json::from_str(&contents).expect("Unable to parse json");

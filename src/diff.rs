@@ -5,7 +5,6 @@ use std::collections::HashMap;
 use std::collections::HashSet;
 use std::fs;
 use std::io;
-use std::io::Read;
 use std::path::{Path, PathBuf};
 
 pub fn diff(i18n_file_base_dir: &str) -> Vec<I18nFile> {
@@ -26,9 +25,7 @@ pub fn diff(i18n_file_base_dir: &str) -> Vec<I18nFile> {
                 // }
                 if files.len() == 2 {
                     let result = diff_key(&from(files[0].clone()), &from(files[1].clone()), vec![]);
-                    // if  !result.is_empty() {
-                    //     rtn.push(result);
-                    // }
+                    rtn.extend(result);
                 } else {
                     // TODO: 3つ以上のファイルがあった時の挙動。
                     // let mut other_parameters: Vec<&I18nFile> = vec![];
@@ -39,13 +36,14 @@ pub fn diff(i18n_file_base_dir: &str) -> Vec<I18nFile> {
                     //
                     // let result = diff_key(&from(files[0].clone()), &from(files[1].clone()), other_parameters);
                     let result = diff_key(&from(files[0].clone()), &from(files[1].clone()), vec![]);
-                    // let result = diff_key(files[0].as_ref(), files[1].as_ref(), files[2..].as_ref());
+                    rtn.extend(result);
                 }
             }
         }
         Err(err) => eprintln!("Error occurred: {}", err),
     }
 
+    format(rtn.to_vec());
     return rtn;
 }
 
@@ -59,7 +57,7 @@ fn from(file: PathBuf) -> I18nFile {
                 .unwrap_or("")
                 .to_string(),
         )
-        .path(file.to_str().unwrap().to_string())
+        .path(file.as_path().to_str().unwrap().to_string())
         .keys(keys)
         .build()
         .unwrap();
@@ -83,10 +81,10 @@ fn group_files_in_dir_recursive(dir_path: &Path) -> io::Result<HashMap<PathBuf, 
     Ok(map)
 }
 
-#[derive(Eq, PartialEq, Debug)]
+#[derive(Eq, PartialEq, Debug, Clone)]
 pub struct I18nFile {
     name: String,
-    path: Option<String>,
+    path: String,
     keys: HashSet<String>,
 }
 
@@ -134,7 +132,7 @@ impl I18nFileBuilder {
     pub fn build(self) -> Option<I18nFile> {
         Some(I18nFile {
             name: self.name?,
-            path: self.path,
+            path: self.path?,
             keys: self.keys?,
         })
     }
@@ -157,6 +155,7 @@ fn diff_key(one: &I18nFile, two: &I18nFile, _args: Vec<&I18nFile>) -> Vec<I18nFi
     let one_difference_key: Vec<_> = all_keys.difference(&one.keys).cloned().collect();
     let one_difference = I18nFileBuilder::new()
         .name(one.name.clone())
+        .path(one.path.clone())
         .keys(one_difference_key.iter().map(|x| x.to_string()).collect())
         .build();
     rtn.push(one_difference.unwrap());
@@ -164,6 +163,7 @@ fn diff_key(one: &I18nFile, two: &I18nFile, _args: Vec<&I18nFile>) -> Vec<I18nFi
     let two_difference_key: Vec<_> = all_keys.difference(&two.keys).cloned().collect();
     let two_difference = I18nFileBuilder::new()
         .name(two.name.clone())
+        .path(two.path.clone())
         .keys(two_difference_key.iter().map(|x| x.to_string()).collect())
         .build();
     rtn.push(two_difference.unwrap());
@@ -186,7 +186,7 @@ fn format(args: Vec<I18nFile>) {
     println!("{}It has Difference!{}", RED, RESET);
     for arg in args {
         println!("{}======================{}", YELLOW, RESET);
-        println!("paths: {:?}", arg.path);
+        println!("path: {}", arg.path);
         println!("name: {}", arg.name);
         println!("keys: {:?}", arg.keys);
     }
@@ -207,6 +207,12 @@ mod tests {
         let expected: Vec<I18nFile> = vec![];
         assert_eq!(expected, diff("tests/resources/diff/02"));
     }
+
+    #[test]
+    fn other_key_files_in_dir_is_return_present() {
+        let expected: Vec<I18nFile> = vec![];
+        assert_ne!(expected, diff("tests/resources/diff/03"));
+    }
 }
 
 #[cfg(test)]
@@ -218,6 +224,7 @@ mod diff_key {
         // GIVEN
         let one = I18nFileBuilder::new()
             .name("ja.json".to_string())
+            .path("".to_string())
             .keys(to_hash_set(&[
                 "Parent.Child.GrandChild.01",
                 "Parent.Child.GrandChild.02",
@@ -227,6 +234,7 @@ mod diff_key {
 
         let two = I18nFileBuilder::new()
             .name("en.json".to_string())
+            .path("".to_string())
             .keys(to_hash_set(&[
                 "Parent.Child.GrandChild.01",
                 "Parent.Child.GrandChild.02",
@@ -255,12 +263,15 @@ mod diff_key {
         // GIVEN
         let one: I18nFile = I18nFileBuilder::new()
             .name("ja.json".to_string())
+            .path("".to_string())
             .keys(to_hash_set(&["Parent.Child.GrandChild.02", "GrandParent"]))
             .build()
             .unwrap();
 
         let two: I18nFile = I18nFileBuilder::new()
             .name("en.json".to_string())
+            .path("".to_string())
+            .keys(to_hash_set(&["Parent.Child.GrandChild.02", "GrandParent"]))
             .keys(to_hash_set(&[
                 "Parent.Child.GrandChild.01",
                 "Parent.Child.GrandChild.02",
@@ -281,6 +292,7 @@ mod diff_key {
                 .unwrap(),
             &I18nFileBuilder::new()
                 .name(one.name)
+                .path("".to_string())
                 .keys(to_hash_set(&["Parent.Child.GrandChild.01"]))
                 .build()
                 .unwrap()
@@ -293,6 +305,7 @@ mod diff_key {
                 .unwrap(),
             &I18nFileBuilder::new()
                 .name(two.name)
+                .path("".to_string())
                 .keys(to_hash_set(&["GrandParent"]))
                 .build()
                 .unwrap()
@@ -313,12 +326,14 @@ mod format {
         // GIVEN
         let one: I18nFile = I18nFileBuilder::new()
             .name("ja.json".to_string())
+            .path("".to_string())
             .keys(to_hash_set(&["Parent.Child.GrandChild.02", "GrandParent"]))
             .build()
             .unwrap();
 
         let two: I18nFile = I18nFileBuilder::new()
             .name("en.json".to_string())
+            .path("".to_string())
             .keys(to_hash_set(&[
                 "Parent.Child.GrandChild.01",
                 "Parent.Child.GrandChild.02",
