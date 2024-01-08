@@ -1,31 +1,47 @@
 extern crate serde_json;
 
-use serde_json::Value;
 use std::collections::HashSet;
-use std::fs::File;
 use std::io::Read;
-use std::path::Path;
+use std::path::{Path, PathBuf};
+use std::fs;
+use std::io;
+use std::collections::HashMap;
 
-pub fn diff() {
-    let file_path = Path::new("tests/resources/diff/01/en.json");
-    let mut file = File::open(&file_path).expect("Unable to open file");
-    let mut contents = String::new();
+pub fn diff(i18n_file_base_dir: &str)  -> Vec<I18nFile> {
+    let dir_path = Path::new(i18n_file_base_dir);
+    match group_files_in_dir_recursive(dir_path) {
+        Ok(map) => {
+            for (dir, files) in map {
+                // ディレクトリに1つしかファイル無ければスキップ。
+                if files.len() <= 1 {continue;}
 
-    // Read the file contents into a string, returns `Result` over `std::io::Error`.
-    match file.read_to_string(&mut contents) {
-        Err(why) => panic!("couldn't read {}: {}", file_path.display(), why),
-        Ok(_) => print!("successfully read {}", file_path.display()),
-    };
-
-    let v: Value = serde_json::from_str(&contents).expect("Unable to parse json");
-    if let Value::Object(map) = v {
-        // for key in map.keys() {
-        //     println!("{}", key);
-        // }
-
-        let keys_as_strings: Vec<String> = map.keys().map(|k| k.to_string()).collect();
-        println!("{:?}", keys_as_strings);
+                println!("Directory: {}", dir.display());
+                for file_path in files {
+                    println!(" - File: {}", file_path.display());
+                }
+            }
+        }
+        Err(err) => eprintln!("Error occurred: {}", err),
     }
+    return vec![];
+}
+
+fn group_files_in_dir_recursive(dir_path: &Path) -> io::Result<HashMap<PathBuf, Vec<PathBuf>>> {
+    let mut map: HashMap<PathBuf, Vec<PathBuf>> = HashMap::new();
+    for entry_result in fs::read_dir(dir_path)? {
+        if let Ok(entry) = entry_result {
+            let path = entry.path();
+            if path.is_file() {
+                let dir = path.parent().unwrap().to_path_buf();
+                let file_list = map.entry(dir).or_insert_with(Vec::new);
+                file_list.push(path);
+            } else if path.is_dir() {
+                let sub_map = group_files_in_dir_recursive(&path)?;
+                map.extend(sub_map);
+            }
+        }
+    }
+    Ok(map)
 }
 
 #[derive(Eq, PartialEq, Debug)]
@@ -126,8 +142,9 @@ mod tests {
     use super::*;
 
     #[test]
-    fn it_adds_two() {
-        diff();
+    fn single_file_in_dir_is_return_empty() {
+        let expected: Vec<I18nFile> =  vec![];
+        assert_eq!(expected ,diff("tests/resources/diff/01"));
     }
 }
 
