@@ -1,21 +1,23 @@
 extern crate serde_json;
 
+use crate::export::export;
+use std::collections::HashMap;
 use std::collections::HashSet;
-use std::io::Read;
-use std::path::{Path, PathBuf};
 use std::fs;
 use std::io;
-use std::collections::HashMap;
-use crate::export::export;
+use std::io::Read;
+use std::path::{Path, PathBuf};
 
-pub fn diff(i18n_file_base_dir: &str)  -> Vec<I18nFile> {
+pub fn diff(i18n_file_base_dir: &str) -> Vec<I18nFile> {
     let dir_path = Path::new(i18n_file_base_dir);
     let mut rtn: Vec<I18nFile> = vec![];
     match group_files_in_dir_recursive(dir_path) {
         Ok(map) => {
             for (dir, files) in map {
                 // ディレクトリに1つしかファイル無ければスキップ。
-                if files.len() <= 1 {continue;}
+                if files.len() <= 1 {
+                    continue;
+                }
 
                 println!("Directory: {}", dir.display());
 
@@ -27,19 +29,22 @@ pub fn diff(i18n_file_base_dir: &str)  -> Vec<I18nFile> {
                     // if  !result.is_empty() {
                     //     rtn.push(result);
                     // }
-
-
                 } else {
                     // TODO: 3つ以上のファイルがあった時の挙動。
+                    // let mut other_parameters: Vec<&I18nFile> = vec![];
+                    // for file in &files[2..] {
+                    //     let tmp = from(file.clone());
+                    //     other_parameters.push(tmp);
+                    // }
+                    //
+                    // let result = diff_key(&from(files[0].clone()), &from(files[1].clone()), other_parameters);
                     let result = diff_key(&from(files[0].clone()), &from(files[1].clone()), vec![]);
                     // let result = diff_key(files[0].as_ref(), files[1].as_ref(), files[2..].as_ref());
-
                 }
             }
         }
         Err(err) => eprintln!("Error occurred: {}", err),
     }
-
 
     return rtn;
 }
@@ -48,7 +53,12 @@ fn from(file: PathBuf) -> I18nFile {
     let keys = export(&file);
 
     return I18nFileBuilder::new()
-        .name(file.file_name().and_then(|s| s.to_str()).unwrap_or("").to_string())
+        .name(
+            file.file_name()
+                .and_then(|s| s.to_str())
+                .unwrap_or("")
+                .to_string(),
+        )
         .path(file.to_str().unwrap().to_string())
         .keys(keys)
         .build()
@@ -188,14 +198,14 @@ mod tests {
 
     #[test]
     fn single_file_in_dir_is_return_empty() {
-        let expected: Vec<I18nFile> =  vec![];
-        assert_eq!(expected ,diff("tests/resources/diff/01"));
+        let expected: Vec<I18nFile> = vec![];
+        assert_eq!(expected, diff("tests/resources/diff/01"));
     }
 
     #[test]
     fn same_key_files_in_dir_is_return_empty() {
-        let expected: Vec<I18nFile> =  vec![];
-        assert_eq!(expected ,diff("tests/resources/diff/02"));
+        let expected: Vec<I18nFile> = vec![];
+        assert_eq!(expected, diff("tests/resources/diff/02"));
     }
 }
 
