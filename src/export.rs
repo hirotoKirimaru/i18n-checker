@@ -6,8 +6,9 @@ use std::fs::File;
 use std::io::Read;
 use std::path::{Path, PathBuf};
 
-pub fn export(file_path: &str) -> HashSet<String> {
-    let path = PathBuf::from(file_path);
+// pub fn export(file_path: &str) -> HashSet<String> {
+pub fn export<P: AsRef<Path>>(file_path: P) -> HashSet<String> {
+    let path = PathBuf::from(file_path.as_ref());
     let file_path = Path::new(path.as_path());
 
     let mut file = File::open(&file_path).expect("Unable to open file");

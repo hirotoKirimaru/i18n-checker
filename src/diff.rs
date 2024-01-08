@@ -6,9 +6,11 @@ use std::path::{Path, PathBuf};
 use std::fs;
 use std::io;
 use std::collections::HashMap;
+use crate::export::export;
 
 pub fn diff(i18n_file_base_dir: &str)  -> Vec<I18nFile> {
     let dir_path = Path::new(i18n_file_base_dir);
+    let mut rtn: Vec<I18nFile> = vec![];
     match group_files_in_dir_recursive(dir_path) {
         Ok(map) => {
             for (dir, files) in map {
@@ -16,14 +18,41 @@ pub fn diff(i18n_file_base_dir: &str)  -> Vec<I18nFile> {
                 if files.len() <= 1 {continue;}
 
                 println!("Directory: {}", dir.display());
-                for file_path in files {
-                    println!(" - File: {}", file_path.display());
+
+                // for file_path in files {
+                //     println!(" - File: {}", file_path.display());
+                // }
+                if files.len() == 2 {
+                    let result = diff_key(&from(files[0].clone()), &from(files[1].clone()), vec![]);
+                    // if  !result.is_empty() {
+                    //     rtn.push(result);
+                    // }
+
+
+                } else {
+                    // TODO: 3つ以上のファイルがあった時の挙動。
+                    let result = diff_key(&from(files[0].clone()), &from(files[1].clone()), vec![]);
+                    // let result = diff_key(files[0].as_ref(), files[1].as_ref(), files[2..].as_ref());
+
                 }
             }
         }
         Err(err) => eprintln!("Error occurred: {}", err),
     }
-    return vec![];
+
+
+    return rtn;
+}
+
+fn from(file: PathBuf) -> I18nFile {
+    let keys = export(&file);
+
+    return I18nFileBuilder::new()
+        .name(file.file_name().and_then(|s| s.to_str()).unwrap_or("").to_string())
+        .path(file.to_str().unwrap().to_string())
+        .keys(keys)
+        .build()
+        .unwrap();
 }
 
 fn group_files_in_dir_recursive(dir_path: &Path) -> io::Result<HashMap<PathBuf, Vec<PathBuf>>> {
@@ -51,6 +80,17 @@ pub struct I18nFile {
     keys: HashSet<String>,
 }
 
+// impl From<PathBuf> for I18nFile {
+//     fn from(path: PathBuf) -> Self {
+//
+//         Self {
+//             name: path.file_name(),
+//             path: path.as_path(),
+//             keys: None,
+//         }
+//     }
+// }
+
 pub struct I18nFileBuilder {
     name: Option<String>,
     path: Option<String>,
@@ -68,6 +108,11 @@ impl I18nFileBuilder {
 
     pub fn name(mut self, name: String) -> Self {
         self.name = Some(name);
+        self
+    }
+
+    pub fn path(mut self, path: String) -> Self {
+        self.path = Some(path);
         self
     }
 
@@ -145,6 +190,12 @@ mod tests {
     fn single_file_in_dir_is_return_empty() {
         let expected: Vec<I18nFile> =  vec![];
         assert_eq!(expected ,diff("tests/resources/diff/01"));
+    }
+
+    #[test]
+    fn same_key_files_in_dir_is_return_empty() {
+        let expected: Vec<I18nFile> =  vec![];
+        assert_eq!(expected ,diff("tests/resources/diff/02"));
     }
 }
 
