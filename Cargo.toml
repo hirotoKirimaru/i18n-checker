@@ -1,11 +1,12 @@
 [package]
-name = "i18n-linter"
+name = "i18n-checker"
 version = "0.1.0"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-serde_json = { version = "1.0", features = []}
+clap = { version = "4.4.13", features = ["cargo"] }
+serde_json = { version = "1.0.111", features = []}
 grep = { version = "0.3.1" }
 ignore = { version = "0.4" }

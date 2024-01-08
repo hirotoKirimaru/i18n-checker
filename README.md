@@ -37,7 +37,10 @@ cargo build --release
 ```
 
 ```bash
-cd target/release/i18n-linter
+cd target/release/i18n-checker
+cmd
+
+i18n-checker.exe test
 ```
 
 ```bash
